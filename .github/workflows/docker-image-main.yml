@@ -1,25 +1,12 @@
 name: Docker Build and Push (Main)
 
 on:
-  push:
-    branches:
-      - main
-      - classical
-    tags:
-      - "v*.*.*"
-      - "v*"
-      - "*.*.*"
-      - "*.*.*-*"
-  workflow_dispatch: # 允许手动触发工作流
-    inputs:
-      branch:
-        description: 'Branch to build'
-        required: false
-        default: 'main'
+  workflow_dispatch: # 仅在临时热修复分支手动补发 1.3.17 镜像
 
 # Workflow's jobs
 jobs:
   build-amd64:
+    if: github.ref == 'refs/heads/codex/docker-1317-hotfix'
     name: Build AMD64 Image
     runs-on: ubuntu-24.04
     outputs:
@@ -70,6 +57,7 @@ jobs:
             VCS_REF=${{ github.sha }}
 
   build-arm64:
+    if: github.ref == 'refs/heads/codex/docker-1317-hotfix'
     name: Build ARM64 Image
     runs-on: ubuntu-24.04-arm
     outputs:
@@ -143,13 +131,9 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/maibot
           tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix=${{ github.ref_name }}-,enable=${{ github.ref_type == 'branch' }}
+            type=raw,value=latest
+            type=raw,value=1.3.17
+            type=raw,value=v1.3.17
 
       - name: Create and Push Manifest
         run: |
